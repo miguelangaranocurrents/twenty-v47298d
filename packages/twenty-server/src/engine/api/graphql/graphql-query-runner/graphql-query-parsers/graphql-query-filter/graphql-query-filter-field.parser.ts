@@ -69,6 +69,7 @@ export class GraphqlQueryFilterFieldParser {
     filterValue: any,
     isFirst = false,
     useDirectTableReference = false,
+    isNegated = false,
   ): void {
     const { fieldMetadata, isReferencedByFieldName } =
       resolveFilterKeyFieldMetadata({
@@ -125,6 +126,7 @@ export class GraphqlQueryFilterFieldParser {
         isFirst,
         isToManyRelation:
           fieldMetadata.settings.relationType === RelationType.ONE_TO_MANY,
+        isNegated,
       });
     }
 
@@ -136,6 +138,7 @@ export class GraphqlQueryFilterFieldParser {
         filterValue,
         isFirst,
         useDirectTableReference,
+        isNegated,
       );
     }
     const [[operator, value]] = Object.entries(filterValue);
@@ -149,6 +152,7 @@ export class GraphqlQueryFilterFieldParser {
       value,
       fieldMetadataType: fieldMetadata.type,
       useDirectTableReference,
+      isNegated,
     });
 
     if (isFirst) {
@@ -166,6 +170,7 @@ export class GraphqlQueryFilterFieldParser {
     filterValue,
     isFirst,
     isToManyRelation,
+    isNegated,
   }: {
     queryBuilder: WhereExpressionBuilder;
     outerQueryBuilder: WorkspaceSelectQueryBuilder;
@@ -174,6 +179,7 @@ export class GraphqlQueryFilterFieldParser {
     filterValue: Partial<ObjectRecordFilter>;
     isFirst: boolean;
     isToManyRelation: boolean;
+    isNegated: boolean;
   }): void {
     if (this.depth >= MAX_RELATION_FILTER_DEPTH) {
       throw new GraphqlQueryRunnerException(
@@ -245,6 +251,7 @@ export class GraphqlQueryFilterFieldParser {
                 nestedQueryBuilder,
                 nestedQueryBuilder.alias,
                 filterValue,
+                isNegated,
               );
             }),
           );
@@ -274,6 +281,7 @@ export class GraphqlQueryFilterFieldParser {
         outerQueryBuilder,
         joinAlias,
         filterValue,
+        isNegated,
       );
     });
 
@@ -292,6 +300,7 @@ export class GraphqlQueryFilterFieldParser {
     fieldValue: any,
     isFirst = false,
     useDirectTableReference = false,
+    isNegated = false,
   ): void {
     const compositeType = compositeTypeDefinitions.get(
       fieldMetadata.type as CompositeFieldMetadataType,
@@ -335,6 +344,7 @@ export class GraphqlQueryFilterFieldParser {
         value,
         fieldMetadataType: fieldMetadata.type,
         useDirectTableReference,
+        isNegated,
       });
 
       if (isFirst && index === 0) {

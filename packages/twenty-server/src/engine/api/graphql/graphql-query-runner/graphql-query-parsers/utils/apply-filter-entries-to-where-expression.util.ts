@@ -8,6 +8,7 @@ type FilterWalkContext = {
   objectNameSingular: string;
   fieldParser: GraphqlQueryFilterFieldParser;
   useDirectTableReference: boolean;
+  isNegated: boolean;
 };
 
 export const applyFilterEntriesToWhereExpression = ({
@@ -17,6 +18,7 @@ export const applyFilterEntriesToWhereExpression = ({
   filter,
   fieldParser,
   useDirectTableReference = false,
+  isNegated = false,
 }: {
   whereExpression: WhereExpressionBuilder;
   outerQueryBuilder: WorkspaceSelectQueryBuilder;
@@ -24,12 +26,14 @@ export const applyFilterEntriesToWhereExpression = ({
   filter: Record<string, unknown>;
   fieldParser: GraphqlQueryFilterFieldParser;
   useDirectTableReference?: boolean;
+  isNegated?: boolean;
 }): void => {
   applyFilterEntries(whereExpression, filter, {
     outerQueryBuilder,
     objectNameSingular,
     fieldParser,
     useDirectTableReference,
+    isNegated,
   });
 };
 
@@ -68,7 +72,10 @@ const applyFilterEntry = (
       applyCondition(
         whereExpression,
         new NotBrackets((negatedWhereExpression) => {
-          applyFilterEntries(negatedWhereExpression, filterValue, context);
+          applyFilterEntries(negatedWhereExpression, filterValue, {
+            ...context,
+            isNegated: !context.isNegated,
+          });
         }),
         isFirst,
       );
@@ -82,6 +89,7 @@ const applyFilterEntry = (
         filterValue,
         isFirst,
         context.useDirectTableReference,
+        context.isNegated,
       );
       break;
   }

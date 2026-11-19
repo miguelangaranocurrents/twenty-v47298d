@@ -55,6 +55,7 @@ export class GraphqlQueryFilterConditionParser {
     outerQueryBuilder: WorkspaceSelectQueryBuilder,
     objectNameSingular: string,
     filter: Partial<ObjectRecordFilter>,
+    isNegated = false,
   ): void {
     applyFilterEntriesToWhereExpression({
       whereExpression: innerQueryBuilder,
@@ -62,6 +63,7 @@ export class GraphqlQueryFilterConditionParser {
       objectNameSingular,
       filter,
       fieldParser: this.queryFilterFieldParser,
+      isNegated,
     });
   }
 }

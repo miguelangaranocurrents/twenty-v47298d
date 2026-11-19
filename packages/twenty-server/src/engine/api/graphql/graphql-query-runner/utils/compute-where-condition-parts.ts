@@ -17,7 +17,14 @@ type WhereConditionParts = {
   params: ObjectLiteral;
 };
 
-export const computeWhereConditionParts = ({
+// These operators stay TRUE or FALSE on NULL operands, so negating them already keeps NULL rows
+const NULL_INSENSITIVE_OPERATORS = new Set([
+  'is',
+  'isStrictly',
+  'isEmptyArray',
+]);
+
+const computeBaseWhereConditionParts = ({
   operator,
   objectNameSingular,
   key,
@@ -210,4 +217,51 @@ export const computeWhereConditionParts = ({
         { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
       );
   }
+};
+
+export const computeWhereConditionParts = ({
+  operator,
+  objectNameSingular,
+  key,
+  subFieldKey,
+  value,
+  fieldMetadataType,
+  useDirectTableReference = false,
+  isNegated = false,
+}: {
+  operator: string;
+  objectNameSingular: string;
+  key: string;
+  subFieldKey?: string;
+  // oxlint-disable-next-line typescript/no-explicit-any
+  value: any;
+  fieldMetadataType: FieldMetadataType;
+  useDirectTableReference?: boolean;
+  isNegated?: boolean;
+}): WhereConditionParts => {
+  const conditionParts = computeBaseWhereConditionParts({
+    operator,
+    objectNameSingular,
+    key,
+    subFieldKey,
+    value,
+    fieldMetadataType,
+    useDirectTableReference,
+  });
+
+  // NOT (col = v) is UNKNOWN for NULL rows and drops them, while every other
+  // in-memory matcher treats a NULL record as matching "is not <value>". Making
+  // the negated predicate FALSE on NULL rows keeps NOT (...) true for them.
+  if (isNegated && !NULL_INSENSITIVE_OPERATORS.has(operator)) {
+    const fieldReference = useDirectTableReference
+      ? `"${key}"`
+      : `"${objectNameSingular}"."${key}"`;
+
+    return {
+      sql: `(${conditionParts.sql}) AND ${fieldReference} IS NOT NULL`,
+      params: conditionParts.params,
+    };
+  }
+
+  return conditionParts;
 };
